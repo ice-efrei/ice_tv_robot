@@ -29,8 +29,9 @@
 // - copy in this text: https://raw.githubusercontent.com/bitbank2/AnimatedGIF/master/test_images/homer_tiny.h
 // - uncomment the following
 
-#include "homer_tiny.h"
-#include "dancing.h"
+#include "happy.h"
+#include "angry.h"
+#include "sad.h"
 
 // ----------------------------
 // Additional Libraries - each one of these will need to be installed.
@@ -222,6 +223,42 @@ void displaySetup()
     dma_display->begin();
 }
 
+//----------------------------------------
+const int trigPin = 10;
+const int echoPin = 11;
+#define SOUND_SPEED 0.034
+#define FAR 50
+#define CLOSE 10 
+long duration;
+float distanceCm;
+int humeur = 2;
+
+int which_range(){
+  // Clears the trigPin
+  digitalWrite(trigPin, LOW);
+  delayMicroseconds(2);
+  // Sets the trigPin on HIGH state for 10 micro seconds
+  digitalWrite(trigPin, HIGH);
+  delayMicroseconds(10);
+  digitalWrite(trigPin, LOW);
+  
+  // Reads the echoPin, returns the sound wave travel time in microseconds
+  duration = pulseIn(echoPin, HIGH);
+  
+  // Calculate the distance
+  distanceCm = duration * SOUND_SPEED/2;
+
+  int range = 2;
+
+  if(distanceCm < CLOSE){
+    range = 0;
+  }else if (distanceCm < FAR) {
+    range = 1;
+  }
+
+  return range;
+}
+
 void setup()
 {
     Serial.begin(115200);
@@ -231,36 +268,48 @@ void setup()
     gif.begin(LITTLE_ENDIAN_PIXELS);
 
     pinMode(sensorPin, INPUT);
+    pinMode(trigPin, OUTPUT); // Sets the trigPin as an Output
+    pinMode(echoPin, INPUT); // Sets the echoPin as an Input
 }
 
 void loop()
 {
-    int state = digitalRead(sensorPin);
-    // put your main code here, to run repeatedly:
-    if (gif.open((uint8_t *)homer_tiny, sizeof(homer_tiny), GIFDraw))
-    {
-        Serial.printf("Successfully opened GIF; Canvas size = %d x %d\n", gif.getCanvasWidth(), gif.getCanvasHeight());
+  switch (humeur) {
+    case 0:
+      if (gif.open((uint8_t *)angry_smol_short, sizeof(angry_smol_short), GIFDraw))
+      {
         while (gif.playFrame(true, NULL))
         {
-            state = digitalRead(sensorPin);
-            if (state == LOW)
-            {
-                gif.close();
-                if (gif.open((uint8_t *)dancing, sizeof(dancing), GIFDraw))
-                {
-                    Serial.printf("Successfully opened GIF; Canvas size = %d x %d\n", gif.getCanvasWidth(), gif.getCanvasHeight());
-                    while (gif.playFrame(true, NULL))
-                    {
-                        state = digitalRead(sensorPin);
-                        if (state == HIGH)
-                        {
-                            break;
-                        }
-                    }
-                    break;
-                }
-            }
+          humeur = which_range();
+          if(humeur != 0) {
+            break;
+          }
         }
-    }
-    gif.close();
+      }
+      gif.close();
+    case 1:
+      if (gif.open((uint8_t *)happy_smol_short, sizeof(happy_smol_short), GIFDraw))
+      {
+        while (gif.playFrame(true, NULL))
+        {
+          humeur = which_range();
+          if(humeur != 0) {
+            break;
+          }
+        }
+      }
+      gif.close();
+    default:
+      if (gif.open((uint8_t *)sad_smol_long, sizeof(sad_smol_long), GIFDraw))
+      {
+        while (gif.playFrame(true, NULL))
+        {
+          humeur = which_range();
+          if(humeur != 0) {
+            break;
+          }
+        }
+      }
+      gif.close();
+  }
 }
